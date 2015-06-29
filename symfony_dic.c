@@ -254,7 +254,6 @@ PHP_MINFO_FUNCTION(symfony_dic)
 {
 	php_info_print_table_start();
 	php_info_print_table_header(2, "Symfony DIC optimizer support", "enabled");
-	php_info_print_table_header(2, "Symfony DIC optimizer support", "enabled");
 	php_info_print_table_end();
 	php_info_print_box_start(0);
 	php_write("Symfony DIC optimizer by Julien Pauli", strlen("Symfony DIC optimizer by Julien Pauli") TSRMLS_CC);
