@@ -36,6 +36,10 @@ ZEND_ARG_INFO(0, id)
 ZEND_ARG_INFO(0, invalidBehavior)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(dic_optimizer_camelize_arg_infos, 0)
+ZEND_ARG_INFO(0, id)
+ZEND_END_ARG_INFO()
+
 zend_module_entry symfony_dic_module_entry = {
 	STANDARD_MODULE_HEADER,
 	"symfony_dic",
@@ -211,20 +215,50 @@ free_and_return:
 	return;
 }
 
+static void dic_optimizer_camelize_handler(INTERNAL_FUNCTION_PARAMETERS)
+{
+	char *arg = NULL;
+	int arg_len, i;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &arg, &arg_len) == FAILURE) {
+		return;
+	}
+
+	php_strtr(arg, arg_len, "_.\\", " __", 3);
+	for (i=arg_len; i>=0; i--) {
+		if (arg[i] == ' ') {
+			arg[i+1] = toupper(arg[i+1]);
+			memmove(&arg[i], &arg[i+1], --arg_len);
+		}
+	}
+	arg[0] = toupper(arg[0]);
+
+	RETURN_STRINGL(arg, arg_len, 1);
+}
+
 static int dic_optimizer_interface_gets_implemented(zend_class_entry *iface, zend_class_entry *ce TSRMLS_DC)
 {
-	zend_function *get;
+	zend_function *get, *camelize;
 
 	if (zend_hash_find(&ce->function_table, "get", sizeof("get"), (void **)&get) == FAILURE) {
 		return FAILURE;
 	}
+	if (zend_hash_find(&ce->function_table, "camelize", sizeof("camelize"), (void **)&camelize) == FAILURE) {
+		return FAILURE;
+	}
 
 	zend_function_dtor(get);
+	zend_function_dtor(camelize);
 
 	get->type = ZEND_INTERNAL_FUNCTION;
 	get->internal_function.handler = dic_optimizer_get_handler;
 	get->internal_function.module  = &symfony_dic_module_entry;
 	get->internal_function.arg_info = (zend_arg_info *)dic_optimizer_get_arg_infos;
+
+	camelize->type = ZEND_INTERNAL_FUNCTION;
+	camelize->internal_function.handler = dic_optimizer_camelize_handler;
+	camelize->internal_function.module  = &symfony_dic_module_entry;
+	camelize->internal_function.arg_info = (zend_arg_info *)dic_optimizer_camelize_arg_infos;
 
 	return SUCCESS;
 }
