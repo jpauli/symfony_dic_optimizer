@@ -15,7 +15,7 @@ class appDevDebugProjectContainer extends Container implements ContainerOptimize
 
 }
 ```
-The interface will replace the get() method by a C implemented one, more performant hopefully.
+The interface will replace the get(), has() and camelize() methods by C implemented ones, more performant hopefully.
 
 Info:
 ====

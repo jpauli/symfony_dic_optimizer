@@ -70,14 +70,18 @@ PHP_RINIT_FUNCTION(symfony_dic);
 PHP_RSHUTDOWN_FUNCTION(symfony_dic);
 PHP_MINFO_FUNCTION(symfony_dic);
 
-#define THROW_CIRCULAR_REF_EXCEPTION do { \
-	ALLOC_INIT_ZVAL(ServiceCircularReferenceException); /* ctor_args */ \
-	zend_lookup_class(SYMFONY_DIC_TOKEN_SERVICE_CIRCULAR_REFERENCE_EXCEPTION_KEY_UP, sizeof(SYMFONY_DIC_TOKEN_SERVICE_CIRCULAR_REFERENCE_EXCEPTION_KEY_UP) - 1, &exception_ce); \
-	object_init_ex(ServiceCircularReferenceException, *exception_ce); \
-	zend_throw_exception_object(ServiceCircularReferenceException TSRMLS_CC); \
-	return; \
-} while (0);
-
+#define OVERWRITE_METHOD(meth) \
+	zend_function *meth; \
+\
+	if (zend_hash_find(&ce->function_table, #meth, sizeof(#meth), (void **)&meth) == FAILURE) { \
+		return FAILURE; \
+	} \
+	zend_function_dtor(meth); \
+\
+	meth->type = ZEND_INTERNAL_FUNCTION; \
+	meth->internal_function.handler = dic_optimizer_##meth##_handler; \
+	meth->internal_function.module  = &symfony_dic_module_entry; \
+	meth->internal_function.arg_info = (zend_arg_info *)dic_optimizer_##meth##_arg_infos;
 
 #define RETURN_THIS RETURN_ZVAL(getThis(), 1, 0)
 #define SYMFONY_DIC_TOKEN_ALIASES_KEY   "aliases"
@@ -85,12 +89,8 @@ PHP_MINFO_FUNCTION(symfony_dic);
 #define SYMFONY_DIC_TOKEN_LOADING_KEY   "loading"
 #define SYMFONY_DIC_TOKEN_METHODMAP_KEY "methodMap"
 
-/* lowercase class names please */
-#define SYMFONY_DIC_TOKEN_SERVICE_CIRCULAR_REFERENCE_EXCEPTION_KEY  "symfony\\component\\dependencyinjection\\exception\\servicecircularreferenceexception"
 #define SYMFONY_DIC_TOKEN_SERVICE_CIRCULAR_REFERENCE_EXCEPTION_KEY_UP  "Symfony\\Component\\DependencyInjection\\Exception\\ServiceCircularReferenceException"
-#define SYMFONY_DIC_TOKEN_SERVICE_NOT_FOUND_EXCEPTION_KEY           "symfony\\component\\dependencyinjection\\exception\\servicenotfoundexception"
 #define SYMFONY_DIC_TOKEN_SERVICE_NOT_FOUND_EXCEPTION_KEY_UP        "Symfony\\Component\\DependencyInjection\\Exception\\ServiceNotFoundException"
-#define SYMFONY_DIC_TOKEN_INACTIVE_SCOPE_EXCEPTION_KEY              "symfony\\component\\dependencyinjection\\exception\\inactivescopeexception"
 #define SYMFONY_DIC_TOKEN_INACTIVE_SCOPE_EXCEPTION_KEY_UP           "Symfony\\Component\\DependencyInjection\\Exception\\InactiveScopeException"
 
 #ifdef ZTS
